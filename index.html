@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PULSO: Plataforma de Inteligencia Cívica y Empleo - Buenaventura</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/tailwind.config.js"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="h-full flex flex-col justify-between selection:bg-tealPortuario selection:text-white" x-data="pulsoApp">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" @click="activeTab = 'dashboard'">
+                <div class="bg-tealPortuario text-white p-2.5 rounded-xl flex items-center justify-center shadow-md">
+                    <i class="bi bi-activity text-lg"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-xl tracking-tight text-azulProfundo">PULSO</span>
+                    <span class="text-xs uppercase tracking-wider bg-tealPortuario/10 text-tealPortuario px-2 py-0.5 rounded-full font-semibold ml-2">Buenaventura</span>
+                </div>
+            </div>
+
+            <!-- Tab Navigation Links -->
+            <nav class="hidden 2xl:flex items-center space-x-1">
+                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-grid-1x2"></i><span>Inicio</span>
+                </button>
+                <button @click="activeTab = 'whatsapp'; initSimulator();" :class="activeTab === 'whatsapp' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-whatsapp"></i><span>Simulador de perfiles</span>
+                </button>
+                <button @click="activeTab = 'dashboard-vivo'; initMap();" :class="activeTab === 'dashboard-vivo' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-map"></i><span>Mapa de Buenaventura</span>
+                </button>
+                <button @click="activeTab = 'reputacion'" :class="activeTab === 'reputacion' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-award"></i><span>Insignias de habilidades</span>
+                </button>
+                <button @click="activeTab = 'inclusion'" :class="activeTab === 'inclusion' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-shield-heart"></i><span>Inclusión & Seguridad</span>
+                </button>
+                <button @click="activeTab = 'financials'" :class="activeTab === 'financials' ? 'bg-tealPortuario text-white shadow' : 'text-grafito hover:bg-gray-100'" class="px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="bi bi-graph-up-arrow"></i><span>Ingresos y presupuesto</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-2">
+                <span class="text-xs bg-terracota/10 text-terracota font-bold px-3 py-1.5 rounded-full hidden 2xl:inline-block">
+                    Propuesta para comunas 5, 7, 10 y 12
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Nav Bar (Bottom) -->
+    <div class="2xl:hidden bg-white border-t border-blue-100 fixed bottom-0 left-0 right-0 z-50 px-2 py-2 flex justify-around shadow-lg">
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-grid-1x2 text-base"></i><span>Inicio</span>
+        </button>
+        <button @click="activeTab = 'whatsapp'; initSimulator();" :class="activeTab === 'whatsapp' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-whatsapp text-base"></i><span>Conversación</span>
+        </button>
+        <button @click="activeTab = 'dashboard-vivo'; initMap();" :class="activeTab === 'dashboard-vivo' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-map text-base"></i><span>Mapa</span>
+        </button>
+        <button @click="activeTab = 'reputacion'" :class="activeTab === 'reputacion' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-award text-base"></i><span>Insignias</span>
+        </button>
+        <button @click="activeTab = 'inclusion'" :class="activeTab === 'inclusion' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-shield-heart text-base"></i><span>Seguridad</span>
+        </button>
+        <button @click="activeTab = 'financials'" :class="activeTab === 'financials' ? 'text-tealPortuario' : 'text-grafito'" class="flex flex-col items-center text-[10px] font-bold">
+            <i class="bi bi-graph-up-arrow text-base"></i><span>Inversión</span>
+        </button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full pb-24 2xl:pb-8">
+        <div class="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-azulProfundo" role="note">
+            <div class="flex items-start gap-3">
+                <i class="bi bi-info-circle-fill mt-0.5 text-terracota" aria-hidden="true"></i>
+                <p class="mb-0 leading-relaxed">
+                    <strong>Alcance de los datos:</strong> la población corresponde al Censo Nacional de Población y Vivienda 2018 del DANE, no a un dato en tiempo real. Los perfiles, negocios y empleos mostrados sirven para probar la plataforma; no son usuarios registrados, empresas interesadas reales ni vacantes verificadas.
+                </p>
+            </div>
+        </div>
+
+        <!-- TAB 1: RESUMEN TESIS -->
+        <div x-show="activeTab === 'dashboard'" class="space-y-8 animate-fadeIn">
+            <div class="card-glass rounded-3xl p-8 sm:p-12 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-tealPortuario/5 blur-3xl pointer-events-none"></div>
+
+                <div class="max-w-3xl space-y-6 relative z-10">
+                    <div class="inline-flex items-center space-x-2 bg-tealPortuario/10 text-tealPortuario px-4 py-1.5 rounded-full text-sm font-bold">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span>Propuesta para Buenaventura, Valle del Cauca</span>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-5xl font-extrabold text-azulProfundo tracking-tight leading-tight">
+                        Conectamos lo que la gente sabe hacer con oportunidades en Buenaventura
+                    </h1>
+
+                    <p class="text-lg sm:text-xl text-grafito leading-relaxed">
+                        Propuesta de servicio para acercar habilidades a oportunidades de la comunidad, sin exigir hoja de vida. Explora 12 negocios distribuidos por la ciudad y prueba coincidencias por habilidades; todavía no hay empleadores ni vacantes reales conectados.
+                    </p>
+
+                    <div class="pt-4 flex flex-wrap gap-4">
+                        <button @click="activeTab = 'whatsapp'; initSimulator();" class="bg-tealPortuario hover:bg-tealHover text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center space-x-2">
+                            <i class="bi bi-whatsapp text-lg"></i>
+                            <span>Conocer la conversación</span>
+                        </button>
+                        <button @click="activeTab = 'dashboard-vivo'; initMap();" class="bg-white border border-blue-200 hover:bg-gray-50 text-azulProfundo px-6 py-3 rounded-xl font-bold shadow-sm transition flex items-center space-x-2">
+                            <i class="bi bi-map text-tealPortuario text-lg"></i>
+                            <span>Ver mapa</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-12 pt-8 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-tealPortuario/10 text-tealPortuario flex items-center justify-center text-2xl"><i class="bi bi-file-earmark-person"></i></div>
+                        <div>
+                            <div class="text-xs font-semibold text-grafito uppercase">Sin hoja de vida</div>
+                            <div class="text-sm font-bold text-azulProfundo">Cuenta tus habilidades con voz o texto</div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-terracota/10 text-terracota flex items-center justify-center text-xl"><i class="bi bi-stopwatch"></i></div>
+                        <div>
+                            <div class="text-xs font-semibold text-grafito uppercase">Tiempo de respuesta</div>
+                            <div class="text-sm font-bold text-azulProfundo">Sin mediciones disponibles</div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-tealPortuario/10 text-tealPortuario flex items-center justify-center text-2xl"><i class="bi bi-shield-check"></i></div>
+                        <div>
+                            <div class="text-xs font-semibold text-grafito uppercase">Accesible y cuidadoso</div>
+                            <div class="text-sm font-bold text-azulProfundo">Respeto por las personas y sus datos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="card-glass rounded-3xl p-6 sm:p-8 space-y-6" aria-labelledby="employment-analytics-title">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-tealPortuario">Analítica de demostración</span>
+                        <h2 id="employment-analytics-title" class="mt-1 text-2xl font-extrabold text-azulProfundo">Perfiles y opciones laborales</h2>
+                    </div>
+                    <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">Perfiles de prueba · ofertas sin verificar</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">Perfiles incluidos</div>
+                        <div class="mt-1 text-3xl font-extrabold text-azulProfundo" x-text="employmentAnalytics.profileCount"></div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">Opciones sugeridas</div>
+                        <div class="mt-1 text-3xl font-extrabold text-tealPortuario" x-text="employmentAnalytics.suggestionCount"></div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">Opciones por perfil</div>
+                        <div class="mt-1 text-3xl font-extrabold text-terracota" x-text="employmentAnalytics.profiles.length ? Math.min(...employmentAnalytics.profiles.map(profile => profile.count)) + '–' + Math.max(...employmentAnalytics.profiles.map(profile => profile.count)) : '0'"></div>
+                        <div class="text-xs text-grafito">mínimo–máximo</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">Áreas sugeridas</div>
+                        <div class="mt-1 text-3xl font-extrabold text-azulProfundo" x-text="employmentAnalytics.areas.length"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <h3 class="font-bold text-azulProfundo">Opciones por perfil</h3>
+                        <p class="mb-5 mt-1 text-xs text-grafito">Cantidad de sugerencias asociadas a cada perfil.</p>
+                        <div class="space-y-4">
+                            <template x-for="profile in employmentAnalytics.profiles" :key="profile.userId">
+                                <div>
+                                    <div class="mb-1 flex justify-between gap-3 text-sm">
+                                        <span class="font-semibold text-azulProfundo" x-text="profile.name"></span>
+                                        <span class="text-grafito" x-text="profile.count"></span>
+                                    </div>
+                                    <div class="h-2.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+                                        <div class="h-full rounded-full bg-tealPortuario" :style="'width: ' + (profile.count / employmentAnalytics.maxProfileCount * 100) + '%'"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <h3 class="font-bold text-azulProfundo">Distribución por área</h3>
+                        <p class="mb-5 mt-1 text-xs text-grafito">Clasificación de las opciones de referencia incluidas en la demo.</p>
+                        <div class="space-y-4">
+                            <template x-for="area in employmentAnalytics.areas" :key="area.name">
+                                <div>
+                                    <div class="mb-1 flex justify-between gap-3 text-sm">
+                                        <span class="font-semibold text-azulProfundo" x-text="area.name"></span>
+                                        <span class="text-grafito" x-text="area.count"></span>
+                                    </div>
+                                    <div class="h-2.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+                                        <div class="h-full rounded-full bg-terracota" :style="'width: ' + (area.count / employmentAnalytics.maxAreaCount * 100) + '%'"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <p class="border-t border-gray-100 pt-4 text-xs leading-relaxed text-grafito">Las cifras se calculan desde tres perfiles de prueba y sus opciones de orientación. No representan actividad, demanda laboral ni resultados reales de PULSO.</p>
+            </section>
+
+            <section class="card-glass rounded-3xl p-6 sm:p-8 space-y-6" aria-labelledby="population-title">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-tealPortuario">Buenaventura en cifras</span>
+                        <h2 id="population-title" class="mt-1 text-2xl font-extrabold text-azulProfundo">Población del último censo oficial</h2>
+                    </div>
+                    <span class="w-fit rounded-full bg-tealPortuario/10 px-3 py-1 text-xs font-bold text-tealPortuario">Censo DANE 2018</span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">Población total censada</div>
+                        <div class="mt-1 text-3xl font-extrabold text-azulProfundo">308.188</div>
+                        <div class="text-xs text-grafito">personas, ajustadas por cobertura</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">En la cabecera municipal</div>
+                        <div class="mt-1 text-3xl font-extrabold text-tealPortuario">235.064</div>
+                        <div class="text-xs text-grafito">76,3% de la población censada</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-5">
+                        <div class="text-sm font-semibold text-grafito">En centros poblados y rural disperso</div>
+                        <div class="mt-1 text-3xl font-extrabold text-terracota">73.124</div>
+                        <div class="text-xs text-grafito">23,7% de la población censada</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-5">
+                    <div class="lg:col-span-3">
+                        <h3 class="text-sm font-bold text-azulProfundo">Distribución de la población censada, 2018</h3>
+                        <p class="mb-4 text-xs text-grafito">Porcentaje de personas según área de residencia.</p>
+                        <div class="h-5 overflow-hidden rounded-full bg-amber-100" role="img" aria-label="Distribución censal de 2018: 76,3% en cabecera municipal y 23,7% en centros poblados y rural disperso">
+                            <div class="h-full rounded-full bg-tealPortuario" style="width: 76.3%"></div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap justify-between gap-2 text-xs text-grafito">
+                            <span>76,3% cabecera municipal</span>
+                            <span>23,7% centros poblados y rural disperso</span>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl bg-tealPortuario/5 p-5 lg:col-span-2">
+                        <div class="text-sm font-bold text-azulProfundo">Un dato observado, no una proyección</div>
+                        <p class="mt-2 text-sm leading-relaxed text-grafito">El último conteo censal oficial disponible para el municipio es de 2018. No se muestran estimaciones posteriores como si fueran conteos actuales.</p>
+                    </div>
+                </div>
+
+                <p class="border-t border-gray-100 pt-4 text-xs leading-relaxed text-grafito">
+                    Fuente: <a class="font-semibold text-tealPortuario underline" href="https://sitios.dane.gov.co/cnpv/app/views/informacion/fichas/76109.pdf" target="_blank" rel="noopener noreferrer">DANE, Censo Nacional de Población y Vivienda 2018, ficha municipal de Buenaventura</a> y <a class="font-semibold text-tealPortuario underline" href="https://www.buenaventura.gov.co/images/multimedia/20201228_anuario_estadistico_2014___2018.pdf" target="_blank" rel="noopener noreferrer">Anuario Estadístico de Buenaventura 2014–2018</a>. Población censal ajustada por cobertura. Estos datos no representan empleos, usuarios ni resultados de PULSO.
+                </p>
+            </section>
+
+            <!-- Orientación laboral para perfiles de prueba -->
+            <div class="space-y-4">
+                <div class="text-center max-w-2xl mx-auto space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-terracota bg-terracota/10 px-3 py-1 rounded-full">Orientación laboral</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Opciones de trabajo relacionadas con cada perfil</h2>
+                    <p class="text-sm text-grafito">Son áreas ocupacionales sugeridas, no vacantes disponibles ni empleos confirmados.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                    <div class="card-glass p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-tealPortuario/10 text-tealPortuario flex items-center justify-center text-xl mb-4"><i class="bi bi-person-badge"></i></div>
+                            <span class="text-xs font-bold text-tealPortuario uppercase tracking-wider">Joven (21 años)</span>
+                            <h3 class="text-lg font-bold text-azulProfundo mt-1">Pepito (Comuna 12)</h3>
+                            <p class="text-sm text-grafito mt-3 leading-relaxed">Sabe reparar celulares y manejar redes, aprende rápido. Le cuesta mostrar lo que sabe porque no tiene experiencia formal.</p>
+                            <div class="mt-4 rounded-2xl bg-tealPortuario/5 p-4">
+                                <span class="text-xs font-bold uppercase tracking-wide text-tealPortuario">3 opciones de orientación · no son vacantes</span>
+                                <ul class="mt-2 space-y-2 text-sm font-semibold text-azulProfundo">
+                                    <template x-for="suggestion in jobSuggestions.filter(item => item.userId === 'pepito')" :key="suggestion.title">
+                                        <li class="flex items-start gap-2"><i class="bi bi-arrow-up-right-circle mt-0.5 text-tealPortuario" aria-hidden="true"></i><span x-text="suggestion.title"></span></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-tealPortuario font-semibold flex items-center"><i class="bi bi-info-circle mr-1"></i> Vacantes no consultadas</div>
+                    </div>
+
+                    <div class="card-glass p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-terracota/10 text-terracota flex items-center justify-center text-xl mb-4"><i class="bi bi-house-heart"></i></div>
+                            <span class="text-xs font-bold text-terracota uppercase tracking-wider">Madre Cabeza de Hogar</span>
+                            <h3 class="text-lg font-bold text-azulProfundo mt-1">Marta (Comuna 7)</h3>
+                            <p class="text-sm text-grafito mt-3 leading-relaxed">Cocina para eventos y administra negocio de barrio. Su hoja de vida no lo refleja y sus horarios dependen del cuidado de sus hijos.</p>
+                            <div class="mt-4 rounded-2xl bg-terracota/5 p-4">
+                                <span class="text-xs font-bold uppercase tracking-wide text-terracota">3 opciones de orientación · no son vacantes</span>
+                                <ul class="mt-2 space-y-2 text-sm font-semibold text-azulProfundo">
+                                    <template x-for="suggestion in jobSuggestions.filter(item => item.userId === 'marta')" :key="suggestion.title">
+                                        <li class="flex items-start gap-2"><i class="bi bi-arrow-up-right-circle mt-0.5 text-terracota" aria-hidden="true"></i><span x-text="suggestion.title"></span></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-terracota font-semibold flex items-center"><i class="bi bi-check-circle mr-1"></i> Horario y apoyo de cuidado por acordar</div>
+                    </div>
+
+                    <div class="card-glass p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-azulProfundo/10 text-azulProfundo flex items-center justify-center text-xl mb-4"><i class="bi bi-accessibility"></i></div>
+                            <span class="text-xs font-bold text-azulProfundo uppercase tracking-wider">Persona con Discapacidad</span>
+                            <h3 class="text-lg font-bold text-azulProfundo mt-1">Camila (Comuna 5)</h3>
+                            <p class="text-sm text-grafito mt-3 leading-relaxed">Tiene habilidades de diseño y atención por chat. Necesita que las herramientas sean accesibles y cuenten con los apoyos adecuados.</p>
+                            <div class="mt-4 rounded-2xl bg-azulProfundo/5 p-4">
+                                <span class="text-xs font-bold uppercase tracking-wide text-azulProfundo">3 opciones de orientación · no son vacantes</span>
+                                <ul class="mt-2 space-y-2 text-sm font-semibold text-azulProfundo">
+                                    <template x-for="suggestion in jobSuggestions.filter(item => item.userId === 'camila')" :key="suggestion.title">
+                                        <li class="flex items-start gap-2"><i class="bi bi-arrow-up-right-circle mt-0.5 text-azulProfundo" aria-hidden="true"></i><span x-text="suggestion.title"></span></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-azulProfundo font-semibold flex items-center"><i class="bi bi-check-circle mr-1"></i> Accesibilidad y modalidad por acordar</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SIMULADOR WHATSAPP MULTI-USUARIO -->
+        <div x-show="activeTab === 'whatsapp'" class="space-y-6 animate-fadeIn" style="display: none;">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-tealPortuario bg-tealPortuario/10 px-3 py-1 rounded-full">Un servicio pensado para la comunidad</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Asistente de orientación laboral</h2>
+                <p class="text-sm text-grafito">Elige un perfil y decide si quieres conversar por texto o por voz. Verás negocios relacionados con las habilidades que compartas; las vacantes no están verificadas.</p>
+            </div>
+
+            <!-- Selector de Usuario -->
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                <button @click="selectedUser = 'pepito'; resetWa();" :class="selectedUser === 'pepito' ? 'bg-tealPortuario text-white shadow-md' : 'bg-white text-azulProfundo border border-blue-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    <i class="bi bi-person-fill mr-1" aria-hidden="true"></i> Pepito (Joven - Comuna 12)
+                </button>
+                <button @click="selectedUser = 'marta'; resetWa();" :class="selectedUser === 'marta' ? 'bg-tealPortuario text-white shadow-md' : 'bg-white text-azulProfundo border border-blue-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    <i class="bi bi-heart-pulse-fill mr-1" aria-hidden="true"></i> Marta (Madre Cuidadora - Comuna 7)
+                </button>
+                <button @click="selectedUser = 'camila'; resetWa();" :class="selectedUser === 'camila' ? 'bg-tealPortuario text-white shadow-md' : 'bg-white text-azulProfundo border border-blue-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    <i class="bi bi-universal-access-circle mr-1" aria-hidden="true"></i> Camila (Discapacidad - Comuna 5)
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mt-4">
+                <!-- Chat Window -->
+                <div class="lg:col-span-7 bg-white rounded-3xl shadow-lg border border-blue-100 overflow-hidden flex flex-col h-[680px]">
+                    <div class="bg-tealPortuario text-white px-6 py-4 flex items-center justify-between shadow">
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-white text-tealPortuario flex items-center justify-center font-bold text-lg">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                                <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm">Asistente PULSO</h3>
+                                <span class="text-xs text-teal-100" x-text="'Perfil de prueba: ' + usersData[selectedUser].name"></span>
+                            </div>
+                        </div>
+                        <button @click="resetWa()" class="text-xs bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-lg transition font-semibold">
+                            <i class="bi bi-arrow-counterclockwise mr-1"></i> Reiniciar
+                        </button>
+                    </div>
+
+                    <div class="flex-grow p-4 overflow-y-auto space-y-4 bg-[#f0f2f5]" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Conversación con el asistente">
+                        <template x-for="msg in waMessages">
+                            <div class="flex" :class="msg.sender === 'user' ? 'justify-end' : 'justify-start'">
+                                <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm"
+                                     :class="msg.sender === 'user' ? 'bg-[#dcf8c6] text-azulProfundo rounded-tr-none' : 'bg-white text-azulProfundo rounded-tl-none border border-gray-200'">
+                                    <div class="font-bold text-xs text-tealPortuario mb-1 flex items-center gap-1.5">
+                                        <i :class="msg.sender === 'user' ? 'bi bi-person-circle' : 'bi bi-robot'" aria-hidden="true"></i>
+                                        <span x-text="msg.sender === 'user' ? usersData[selectedUser].name : 'Asistente PULSO'"></span>
+                                    </div>
+                                    <p class="leading-relaxed" x-text="msg.text"></p>
+                                    <template x-if="msg.suggestions && msg.suggestions.length">
+                                        <ul class="mt-2 space-y-1 border-t border-gray-100 pt-2 text-sm">
+                                            <template x-for="suggestion in msg.suggestions" :key="suggestion.title">
+                                                <li class="flex items-start gap-2">
+                                                    <i class="bi bi-briefcase-fill mt-0.5 text-tealPortuario" aria-hidden="true"></i>
+                                                    <span x-text="suggestion.title"></span>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="matchResult">
+                            <div class="bg-tealPortuario/10 border border-tealPortuario/30 rounded-2xl p-4 text-azulProfundo space-y-3 animate-fadeIn">
+                                <span class="font-extrabold text-tealPortuario text-sm"><i class="bi bi-lightbulb-fill mr-1"></i> Coincidencias para explorar</span>
+                                <p class="text-xs text-grafito">Área relacionada: <strong x-text="matchResult.role"></strong> · horario <strong x-text="matchResult.schedule"></strong> · modalidad <strong x-text="matchResult.modality"></strong> · apoyo <strong x-text="matchResult.accessibility"></strong>.</p>
+                                <p class="text-xs font-semibold text-tealPortuario" x-text="'Base de recomendación: ' + matchResult.basis"></p>
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="skill in matchResult.criteria" :key="skill">
+                                        <span class="rounded-full bg-white px-2 py-1 text-[11px] text-tealPortuario" x-text="skill"></span>
+                                    </template>
+                                </div>
+                                <template x-for="employer in matchResult.companies" :key="employer.id">
+                                    <div class="rounded-xl border border-tealPortuario/20 bg-white p-3">
+                                        <div class="flex items-start gap-2">
+                                            <i :class="'bi ' + employer.icon + ' mt-0.5 text-tealPortuario'" aria-hidden="true"></i>
+                                            <div class="min-w-0 flex-1">
+                                                <strong class="block text-xs" x-text="employer.name"></strong>
+                                                <span class="block text-xs text-grafito" x-text="employer.job"></span>
+                                                <span class="mt-1 block text-[11px] text-grafito" x-text="'Coincide: ' + employer.matchingSkills.join(', ')"></span>
+                                                <button @click="selectEmployer(employer.id)" class="mt-2 rounded-lg px-3 py-1.5 text-xs font-bold transition"
+                                                        :class="selectedEmployerId === employer.id ? 'bg-tealPortuario text-white' : 'bg-tealPortuario/10 text-tealPortuario hover:bg-tealPortuario/20'"
+                                                        x-text="selectedEmployerId === employer.id ? 'Coincidencia elegida' : 'Elegir para explorar'"></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <p class="text-[11px] leading-relaxed text-grafito">Estos datos son para explorar la plataforma: elegir una opción no envía una solicitud ni confirma interés de una empresa real.</p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="p-4 bg-white border-t border-gray-200 flex flex-col gap-2">
+                        <div class="flex gap-2" role="group" aria-label="Elige cómo conversar con el asistente">
+                            <button @click="setInteractionMode('text')" :aria-pressed="interactionMode === 'text'" :class="interactionMode === 'text' ? 'bg-tealPortuario text-white' : 'bg-gray-100 text-azulProfundo'" class="flex-1 rounded-xl px-3 py-2 text-xs font-bold">
+                                <i class="bi bi-chat-left-text mr-1" aria-hidden="true"></i> Texto
+                            </button>
+                            <button @click="setInteractionMode('voice')" :aria-pressed="interactionMode === 'voice'" :class="interactionMode === 'voice' ? 'bg-tealPortuario text-white' : 'bg-gray-100 text-azulProfundo'" class="flex-1 rounded-xl px-3 py-2 text-xs font-bold">
+                                <i class="bi bi-mic mr-1" aria-hidden="true"></i> Voz
+                            </button>
+                        </div>
+                        <form x-show="interactionMode === 'text'" @submit.prevent="sendTextMessage()" class="flex items-end gap-2">
+                            <label for="chat-message" class="sr-only">Escribe tu mensaje</label>
+                            <textarea id="chat-message" x-model="draftMessage" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendTextMessage() }" rows="2" placeholder="Cuéntame tus habilidades o qué trabajo buscas…" class="min-w-0 flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm text-azulProfundo focus:outline-none focus:ring-2 focus:ring-tealPortuario"></textarea>
+                            <button type="submit" class="rounded-xl bg-tealPortuario px-4 py-3 text-white shadow transition hover:bg-tealHover" aria-label="Enviar mensaje">
+                                <i class="bi bi-send-fill" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                        <div x-show="interactionMode === 'voice'" class="flex flex-col gap-2">
+                            <button @click="startVoiceInput()" :class="voiceListening ? 'bg-terracota hover:bg-amber-700' : 'bg-tealPortuario hover:bg-tealHover'" class="w-full rounded-xl px-4 py-3 text-sm font-bold text-white shadow transition">
+                                <i :class="voiceListening ? 'bi bi-stop-circle-fill' : 'bi bi-mic-fill'" class="mr-2" aria-hidden="true"></i>
+                                <span x-text="voiceListening ? 'Detener escucha' : 'Hablar con el asistente'"></span>
+                            </button>
+                            <p x-show="voiceStatus" x-text="voiceStatus" role="status" class="mb-0 text-xs text-grafito"></p>
+                            <p class="mb-0 text-[11px] text-grafito">El dictado y la respuesta hablada dependen de la compatibilidad y permisos de tu navegador.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explainer Panel -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="card-glass p-6 rounded-3xl shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-azulProfundo text-lg flex items-center">
+                            <i class="bi bi-info-circle-fill text-tealPortuario mr-2"></i>
+                            Perfil de prueba: <span class="text-tealPortuario ml-1" x-text="usersData[selectedUser].name"></span>
+                        </h3>
+                        <p class="text-sm text-grafito leading-relaxed">Tu perfil tiene <strong x-text="usersData[selectedUser].skills.length"></strong> habilidades registradas. Comparamos esas habilidades con los requisitos de cada opción.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="skill in usersData[selectedUser].skills" :key="skill">
+                                <span class="rounded-full bg-tealPortuario/10 px-3 py-1 text-xs font-semibold text-tealPortuario" x-text="skill"></span>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="card-glass p-6 rounded-3xl shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-azulProfundo text-base flex items-center">
+                            <i class="bi bi-sliders text-tealPortuario mr-2" aria-hidden="true"></i> Mis preferencias y accesibilidad
+                        </h3>
+                        <div>
+                            <label for="preferred-schedule" class="block text-sm font-bold text-azulProfundo mb-1">Horario que prefiero</label>
+                            <select id="preferred-schedule" x-model="usersData[selectedUser].schedule" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-azulProfundo focus:outline-none focus:ring-2 focus:ring-tealPortuario">
+                                <template x-for="option in scheduleOptions" :key="option">
+                                    <option :value="option" x-text="option"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="preferred-modality" class="block text-sm font-bold text-azulProfundo mb-1">Modalidad que prefiero</label>
+                            <select id="preferred-modality" x-model="usersData[selectedUser].modality" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-azulProfundo focus:outline-none focus:ring-2 focus:ring-tealPortuario">
+                                <template x-for="option in modalityOptions" :key="option">
+                                    <option :value="option" x-text="option"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="accessibility-support" class="block text-sm font-bold text-azulProfundo mb-1">Apoyo o ajuste que necesito</label>
+                            <select id="accessibility-support" x-model="usersData[selectedUser].accessibility" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-azulProfundo focus:outline-none focus:ring-2 focus:ring-tealPortuario">
+                                <template x-for="option in accessibilityOptions[selectedUser]" :key="option">
+                                    <option :value="option" x-text="option"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <p class="text-xs text-grafito">Puedes cambiar estas opciones. Los apoyos deben acordarse con el empleador.</p>
+                    </div>
+                    <div class="card-glass p-6 rounded-3xl shadow-sm space-y-3">
+                        <div>
+                            <h3 class="font-extrabold text-azulProfundo text-base"><i class="bi bi-stars mr-1 text-tealPortuario" aria-hidden="true"></i> Opciones que coinciden</h3>
+                            <p class="mt-1 text-xs text-grafito">Elige una para explorar la coincidencia. Los negocios y las vacantes aún no están verificados.</p>
+                        </div>
+                        <template x-for="employer in matchedEmployers" :key="employer.id">
+                            <div class="rounded-2xl border p-3" :class="selectedEmployerId === employer.id ? 'border-tealPortuario bg-tealPortuario/5' : 'border-gray-100 bg-white'">
+                                <div class="flex items-start gap-2">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tealPortuario/10 text-tealPortuario"><i :class="'bi ' + employer.icon" aria-hidden="true"></i></span>
+                                    <div class="min-w-0 flex-1">
+                                        <strong class="block text-xs text-azulProfundo" x-text="employer.name"></strong>
+                                        <span class="block text-xs text-grafito" x-text="employer.job"></span>
+                                        <span class="mt-1 block text-[11px] text-tealPortuario" x-text="'Habilidades: ' + employer.matchingSkills.join(', ')"></span>
+                                        <span class="mt-1 block text-[11px] text-grafito" x-text="employer.experience"></span>
+                                        <button @click="selectEmployer(employer.id)" class="mt-2 text-xs font-bold text-tealPortuario underline" x-text="selectedEmployerId === employer.id ? 'Elegida para explorar' : 'Elegir esta opción'"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <p class="mb-0 border-t border-gray-100 pt-3 text-[11px] leading-relaxed text-grafito">Las coincidencias son simuladas para la demo. No significan que un negocio real esté interesado ni envían tu información.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'dashboard-vivo'" class="space-y-6 animate-fadeIn" style="display: none;">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-tealPortuario bg-tealPortuario/10 px-3 py-1 rounded-full">12 negocios y empleos para explorar</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Mapa de opciones laborales</h2>
+                <p class="text-sm text-grafito">Los marcadores se ubican sobre calles cartografiadas en distintos barrios de la ciudad y la isla de Cascajal. Selecciona uno para ver el empleo y las habilidades solicitadas.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-2 border-l-4 border-tealPortuario">
+                    <div class="text-xs font-bold text-grafito uppercase">Población total</div>
+                    <div class="text-3xl font-extrabold text-azulProfundo">308.188</div>
+                    <div class="text-xs text-tealPortuario font-semibold">Censo DANE 2018, ajustado por cobertura</div>
+                </div>
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-2 border-l-4 border-terracota">
+                    <div class="text-xs font-bold text-grafito uppercase">Cabecera municipal</div>
+                    <div class="text-3xl font-extrabold text-azulProfundo">235.064</div>
+                    <div class="text-xs text-terracota font-semibold">Censo DANE 2018, cabecera municipal</div>
+                </div>
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-2 border-l-4 border-tealPortuario">
+                    <div class="text-xs font-bold text-grafito uppercase">Rural y centros poblados</div>
+                    <div class="text-3xl font-extrabold text-azulProfundo">73.124</div>
+                    <div class="text-xs text-grafito">Censo DANE 2018, rural y centros poblados</div>
+                </div>
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-2 border-l-4 border-azulProfundo">
+                    <div class="text-3xl font-extrabold text-azulProfundo">76,3%</div>
+                    <div class="text-xs font-bold text-grafito uppercase">Población en cabecera</div>
+                    <div class="text-xs text-grafito">Proporción calculada con el Censo DANE 2018</div>
+                </div>
+            </div>
+
+            <!-- Los marcadores son ilustrativos; no representan ubicaciones reales de trabajo. -->
+            <div class="card-glass p-6 rounded-3xl shadow-sm space-y-4">
+                <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 class="font-extrabold text-azulProfundo text-lg flex items-center">
+                        <i class="bi bi-pin-map-fill text-tealPortuario mr-2"></i> Negocios y habilidades buscadas
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs bg-amber-100 text-amber-900 px-3 py-1 rounded-full font-bold"><span x-text="employers.length"></span> negocios · marcadores de referencia</span>
+                        <span class="text-xs bg-tealPortuario/10 text-tealPortuario px-3 py-1 rounded-full font-bold" aria-live="polite">
+                            Hora local actual: <time x-text="currentTime"></time>
+                        </span>
+                    </div>
+                </div>
+
+                <p class="text-xs leading-relaxed text-grafito">Los nombres, puestos y requisitos son para explorar la plataforma; no confirman interés empresarial ni vacantes. Los marcadores usan calles y sectores cartografiados como referencia, no direcciones de negocios. La hora sí se actualiza en vivo.</p>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: MICRO-CREDENCIALES Y REPUTACIÓN -->
+        <div x-show="activeTab === 'reputacion'" class="space-y-6 animate-fadeIn" style="display: none;">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-terracota bg-terracota/10 px-3 py-1 rounded-full">Reconocer lo que sabes hacer</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Insignias por trabajos y tareas realizadas</h2>
+                <p class="text-sm text-grafito">Propuesta para reconocer experiencia demostrada. Aún no hay insignias verificadas.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                <div class="card-glass p-8 rounded-3xl shadow-sm space-y-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-terracota/10 text-terracota flex items-center justify-center text-3xl font-bold">
+                            <i class="bi bi-award-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-terracota uppercase">Insignia propuesta, pendiente de validación</span>
+                            <h3 class="text-xl font-extrabold text-azulProfundo">Auxiliar de Refrigeración Naval</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm text-grafito leading-relaxed">
+                        Podría entregarse después de completar una tarea y recibir confirmación del empleador. Esta insignia no acredita una experiencia comprobada.
+                    </p>
+                    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-grafito">Validación con un empleador: pendiente</span>
+                        <span class="bg-amber-100 text-amber-900 px-3 py-1 rounded-lg text-xs font-bold">Por confirmar</span>
+                    </div>
+                </div>
+
+                <div class="card-glass p-8 rounded-3xl shadow-sm space-y-4">
+                    <h3 class="font-extrabold text-azulProfundo text-lg flex items-center">
+                        <i class="bi bi-book-half text-tealPortuario mr-2"></i> Aprendizaje corto en el barrio
+                    </h3>
+                    <p class="text-sm text-grafito leading-relaxed">
+                        Si se confirma una necesidad de trabajo, se podrían ofrecer cursos cortos y apoyos de cuidado. No hay un monto de apoyo aprobado.
+                    </p>
+                    <div class="p-4 rounded-2xl bg-tealPortuario/5 border border-tealPortuario/20 text-xs text-azulProfundo font-semibold">
+                        <i class="bi bi-lightbulb-fill text-tealPortuario mr-1"></i> Idea por validar con quienes buscan y ofrecen trabajo.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: INCLUSIÓN Y SEGURIDAD -->
+        <div x-show="activeTab === 'inclusion'" class="space-y-6 animate-fadeIn" style="display: none;">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-tealPortuario"><i class="bi bi-shield-lock-fill text-base" aria-hidden="true"></i> Confianza y Seguridad</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Cuidarnos al buscar trabajo</h2>
+                <p class="text-sm text-grafito">Propuesta de pautas para revisar ofertas y reportar inquietudes. Esta demostración no verifica negocios ni recibe reportes reales.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Verificación de Empresas y Alertas -->
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-4">
+                    <h3 class="font-extrabold text-azulProfundo text-base flex items-center">
+                        <i class="bi bi-shield-check text-tealPortuario mr-2 text-xl"></i> Revisión de ofertas
+                    </h3>
+                    <p class="text-xs text-grafito">La plataforma aún no verifica negocios ni recibe reportes reales.</p>
+
+                    <div class="space-y-3">
+                        <template x-if="safetyAlerts.length === 0">
+                            <p class="rounded-xl bg-gray-50 p-4 text-sm text-grafito">No hay negocios ni ofertas verificadas en la plataforma.</p>
+                        </template>
+                        <template x-for="alert in safetyAlerts" :key="alert.id">
+                            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-between text-xs">
+                                <div>
+                                    <strong class="text-azulProfundo block" x-text="alert.title"></strong>
+                                    <span :class="alert.color" x-text="alert.status"></span>
+                                </div>
+                                <i class="bi bi-chat-square-text-fill text-grafito text-lg" aria-hidden="true"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Botón de reporte de demostración -->
+                <div class="card-glass p-6 rounded-3xl shadow-sm space-y-4">
+                    <h3 class="font-extrabold text-azulProfundo text-base flex items-center">
+                        <i class="bi bi-exclamation-triangle-fill text-terracota mr-2 text-xl"></i> Alerta Comunitaria & Botón de Reporte
+                    </h3>
+                    <p class="text-xs text-grafito">Idea para compartir inquietudes y acordar recomendaciones para encuentros seguros:</p>
+
+                    <div class="p-4 rounded-2xl bg-terracota/10 border border-terracota/30 space-y-3">
+                        <div class="text-xs font-bold text-azulProfundo">Simular Alerta / Reporte Preventivo:</div>
+                        <button @click="reportSent = true" class="w-full bg-terracota hover:bg-amber-700 text-white py-2.5 rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1">
+                            <i class="bi bi-shield-exclamation mr-1"></i>
+                            <span x-text="reportSent ? 'Prueba realizada; no se envió ningún reporte' : 'Probar el botón (no envía un reporte real)'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: MODELO FINANCIERO E INVERSIÓN -->
+        <div x-show="activeTab === 'financials'" class="space-y-6 animate-fadeIn" style="display: none;">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-tealPortuario bg-tealPortuario/10 px-3 py-1 rounded-full">Estimación de planeación · 2026 · COP</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-azulProfundo">Cómo podría sostenerse el proyecto</h2>
+                <p class="text-sm text-grafito">Presupuesto estimado para un piloto de 9 meses en Buenaventura. Falta validar con cotizaciones.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+                <div class="card-glass p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-tealPortuario/10 text-tealPortuario flex items-center justify-center text-xl mb-4"><i class="bi bi-cash-stack"></i></div>
+                        <h3 class="text-lg font-bold text-azulProfundo">Ingresos por gestionar</h3>
+                        <ul class="text-sm text-grafito mt-3 space-y-3">
+                            <li class="border-b border-gray-100 pb-2"><strong class="text-azulProfundo">Entidades públicas:</strong> posibles convenios; ninguno confirmado.</li>
+                            <li class="border-b border-gray-100 pb-2"><strong class="text-azulProfundo">Negocios:</strong> aporte por definir; sin acuerdos vigentes.</li>
+                            <li><strong class="text-azulProfundo">Personas usuarias:</strong> tarifa por definir.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card-glass p-6 rounded-3xl shadow-sm lg:col-span-2 bg-gradient-to-br from-tealPortuario/5 to-white">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-tealPortuario text-white flex items-center justify-center text-xl mb-4"><i class="bi bi-rocket-takeoff"></i></div>
+                        <div class="flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-azulProfundo">Inversión estimada del piloto</h3>
+                                <p class="text-xs text-grafito">9 meses · un desarrollador, coordinación y actividades locales</p>
+                            </div>
+                            <div class="text-2xl font-extrabold text-tealPortuario">$150.000.000 COP</div>
+                        </div>
+                        <ul class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm text-grafito">
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Desarrollo y soporte ($6 M × 9 meses)</span><strong class="text-azulProfundo">$54 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Coordinación ($4 M × 9 meses)</span><strong class="text-azulProfundo">$36 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Trabajo local y transporte ($2 M × 9 meses)</span><strong class="text-azulProfundo">$18 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Accesibilidad y pruebas con personas</span><strong class="text-azulProfundo">$9 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Alojamiento web y herramientas ($0,6 M × 9 meses)</span><strong class="text-azulProfundo">$5,4 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Protección de datos y asesoría legal</span><strong class="text-azulProfundo">$6 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Capacitación y evaluación</span><strong class="text-azulProfundo">$7,6 M</strong></li>
+                            <li class="flex justify-between gap-3 border-b border-gray-200 pb-2"><span>Reserva para imprevistos</span><strong class="text-azulProfundo">$14 M</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-grafito">Estimación de planeación, no es una cotización ni financiación aprobada. Supone honorarios por servicios; si se contrata personal en nómina, hay que sumar prestaciones y aportes. No incluye pagos o auxilios a participantes.</p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-blue-100 py-4 hidden 2xl:block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs font-semibold text-grafito">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-tealPortuario animate-pulse"></span>
+                <span>PULSO &bull; Una propuesta para acercar habilidades y oportunidades</span>
+            </div>
+            <div>
+                <span>Propuesta para Buenaventura, Valle del Cauca</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./js/app.js"></script>
+</body>
+</html>
